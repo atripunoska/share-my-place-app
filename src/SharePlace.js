@@ -1,12 +1,22 @@
 import { Modal } from "./UI/Modal";
+import { Map } from "./UI/Map";
+import { getCoordsFromAddress } from "./Utility/Location";
 
 class PlaceFinder {
   constructor() {
     const addressForm = document.querySelector("form");
     const locateUserBtn = document.getElementById("locate-btn");
 
-    locateUserBtn.addEventListener("click", this.locateUserHandler);
-    addressForm.addEventListener("submit", this.findAddressHanlder);
+    locateUserBtn.addEventListener("click", this.locateUserHandler.bind(this));
+    addressForm.addEventListener("submit", this.findAddressHanlder.bind(this));
+  }
+
+  selectPlace(coordinates) {
+    if (this.map) {
+      this.map.render();
+    } else {
+      this.map = new Map(coordinates);
+    }
   }
 
   locateUserHandler() {
@@ -28,7 +38,7 @@ class PlaceFinder {
           lat: successResult.coords.latitude,
           lng: successResult.coords.longitude,
         };
-        console.log(coordinates);
+        this.selectPlace(coordinates);
       },
       (error) => {
         modal.hide();
@@ -38,7 +48,27 @@ class PlaceFinder {
       }
     );
   }
-  findAddressHanlder() {}
+
+  async findAddressHanlder(event) {
+    event.preventDefault();
+    const address = event.target.querySelector("input").value;
+    if (!address || address.trim().length === 0) {
+      alert("Invalid address entered - please try again!");
+      return;
+    }
+    const modal = new Modal(
+      "loading-modal-content",
+      "Loading location - please wait!!!"
+    );
+    modal.show();
+    try {
+      const coordinates = await getCoordsFromAddress(address);
+      this.selectPlace(coordinates);
+    } catch (err) {
+      alert(err.message);
+    }
+    modal.hide();
+  }
 }
 
 new PlaceFinder();
